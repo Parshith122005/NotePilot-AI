@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotePilot AI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>NotePilot AI</h1>
+    </header>
+
+    <main>
+        <section class="intro">
+            <h2>Turn your notes into knowledge.</h2>
+            <p>Your personal AI study assistant.<br>
+               Summarize notes, generate quizzes, and create flashcards.</p>
+        </section>
+
+        <section class="card">
+            <label for="notes">Your study notes</label>
+
+            <textarea id="notes"
+                placeholder="Paste your study notes here..."></textarea>
+
+            <button id="summarizeBtn">Generate Summary</button>
+
+            <div id="result" aria-live="polite"></div>
+        </section>
+    </main>
+
+    <footer>
+        Built with open-source AI in mind · NotePilot AI
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
