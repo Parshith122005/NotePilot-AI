@@ -1,12 +1,34 @@
-# Java / Maven
-backend/target/
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Java
 *.class
+*.jar
+*.war
+hs_err_pid*
 
-# IDE files
+# IDEs
 .idea/
+*.iml
+*.iws
 .vscode/
+.classpath
+.project
+.settings/
+*.swp
+*~
 
-# Secrets
+# Secrets (keep the example file)
 .env
 .env.*
 !.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/

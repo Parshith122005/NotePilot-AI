@@ -1,41 +1,85 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NotePilot AI</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NotePilot AI — Turn your notes into knowledge</title>
+  <meta name="description" content="NotePilot AI turns pasted study notes into summaries, quizzes and flashcards." />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <a class="skip-link" href="#notes">Skip to notes</a>
 
-    <header>
-        <h1>NotePilot AI</h1>
-    </header>
+  <header class="site-header">
+    <div class="container brand">
+      <svg class="logo" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="NotePilot AI logo">
+        <rect width="32" height="32" rx="8" fill="#2f5bea" />
+        <path d="M9 22 L23 9 L19 23 L15.5 17.5 Z" fill="#ffffff" />
+      </svg>
+      <span class="brand-name">NotePilot AI</span>
+    </div>
+  </header>
 
-    <main>
-        <section class="intro">
-            <h2>Turn your notes into knowledge.</h2>
-            <p>Your personal AI study assistant.<br>
-               Summarize notes, generate quizzes, and create flashcards.</p>
-        </section>
+  <main class="container">
+    <section class="hero">
+      <h1>Turn your notes into knowledge.</h1>
+      <p class="lead">
+        Paste your study notes and NotePilot AI will write a structured revision summary,
+        build a five-question multiple-choice quiz, and create eight flashcards to practise with.
+      </p>
+    </section>
 
-        <section class="card">
-            <label for="notes">Your study notes</label>
+    <section class="card" aria-labelledby="notes-heading">
+      <h2 id="notes-heading">Your notes</h2>
+      <label for="notes" class="field-label">Paste or type your study notes</label>
+      <textarea id="notes" rows="10" maxlength="20000"
+                placeholder="Example: Photosynthesis is the process by which plants convert light energy into chemical energy..."
+                aria-describedby="notes-help charCount"></textarea>
+      <div class="field-meta">
+        <p id="notes-help" class="hint">Tip: 150–2,000 words of clear notes on one topic give the best results.</p>
+        <p id="charCount" class="hint" aria-live="polite">0 / 20,000 characters</p>
+      </div>
+      <div class="button-row">
+        <button id="btnSummary" type="button" class="btn btn-primary">Generate Summary</button>
+        <button id="btnQuiz" type="button" class="btn btn-primary">Generate Quiz</button>
+        <button id="btnFlash" type="button" class="btn btn-primary">Generate Flashcards</button>
+      </div>
+    </section>
 
-            <textarea id="notes"
-                placeholder="Paste your study notes here..."></textarea>
+    <section id="summarySection" class="card" aria-labelledby="summary-heading" hidden>
+      <div class="card-head">
+        <h2 id="summary-heading">Summary</h2>
+        <button id="btnCopy" type="button" class="btn btn-secondary" hidden>Copy Summary</button>
+      </div>
+      <p id="summaryStatus" class="status" role="status" aria-live="polite" hidden></p>
+      <div id="summaryOutput" class="prose"></div>
+    </section>
 
-            <button id="summarizeBtn">Generate Summary</button>
+    <section id="quizSection" class="card" aria-labelledby="quiz-heading" hidden>
+      <h2 id="quiz-heading">Quiz</h2>
+      <p id="quizStatus" class="status" role="status" aria-live="polite" hidden></p>
+      <div id="quizOutput"></div>
+    </section>
 
-            <div id="result" aria-live="polite"></div>
-        </section>
-    </main>
+    <section id="flashSection" class="card" aria-labelledby="flash-heading" hidden>
+      <div class="card-head">
+        <h2 id="flash-heading">Flashcards</h2>
+        <button id="btnRestart" type="button" class="btn btn-secondary" hidden>Start Again</button>
+      </div>
+      <p id="flashStatus" class="status" role="status" aria-live="polite" hidden></p>
+      <p id="flashProgress" class="progress" aria-live="polite" hidden>
+        <span>Know It: <strong id="knownCount">0</strong></span>
+        <span>Review Again: <strong id="reviewCount">0</strong></span>
+        <span>Remaining: <strong id="remainingCount">0</strong></span>
+      </p>
+      <div id="flashGrid" class="flash-grid"></div>
+    </section>
+  </main>
 
-    <footer>
-        Built with open-source AI in mind · NotePilot AI
-    </footer>
+  <footer class="container site-footer">
+    <p>NotePilot AI — AI-generated content can contain mistakes. Check important facts against your sources.</p>
+  </footer>
 
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
