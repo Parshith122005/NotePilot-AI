@@ -1,85 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NotePilot AI — Turn your notes into knowledge</title>
-  <meta name="description" content="NotePilot AI turns pasted study notes into summaries, quizzes and flashcards." />
-  <link rel="stylesheet" href="style.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NotePilot AI</title>
+<!-- Change this to your deployed HTTPS backend URL (ending in /api) for production -->
+<meta name="api-base" content="https://notepilot-ai-2026.onrender.com/api"><script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem('np_theme'))||'dark'}catch(e){}</script>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <a class="skip-link" href="#notes">Skip to notes</a>
-
-  <header class="site-header">
-    <div class="container brand">
-      <svg class="logo" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="NotePilot AI logo">
-        <rect width="32" height="32" rx="8" fill="#2f5bea" />
-        <path d="M9 22 L23 9 L19 23 L15.5 17.5 Z" fill="#ffffff" />
-      </svg>
-      <span class="brand-name">NotePilot AI</span>
-    </div>
-  </header>
-
-  <main class="container">
-    <section class="hero">
-      <h1>Turn your notes into knowledge.</h1>
-      <p class="lead">
-        Paste your study notes and NotePilot AI will write a structured revision summary,
-        build a five-question multiple-choice quiz, and create eight flashcards to practise with.
-      </p>
-    </section>
-
-    <section class="card" aria-labelledby="notes-heading">
-      <h2 id="notes-heading">Your notes</h2>
-      <label for="notes" class="field-label">Paste or type your study notes</label>
-      <textarea id="notes" rows="10" maxlength="20000"
-                placeholder="Example: Photosynthesis is the process by which plants convert light energy into chemical energy..."
-                aria-describedby="notes-help charCount"></textarea>
-      <div class="field-meta">
-        <p id="notes-help" class="hint">Tip: 150–2,000 words of clear notes on one topic give the best results.</p>
-        <p id="charCount" class="hint" aria-live="polite">0 / 20,000 characters</p>
-      </div>
-      <div class="button-row">
-        <button id="btnSummary" type="button" class="btn btn-primary">Generate Summary</button>
-        <button id="btnQuiz" type="button" class="btn btn-primary">Generate Quiz</button>
-        <button id="btnFlash" type="button" class="btn btn-primary">Generate Flashcards</button>
-      </div>
-    </section>
-
-    <section id="summarySection" class="card" aria-labelledby="summary-heading" hidden>
-      <div class="card-head">
-        <h2 id="summary-heading">Summary</h2>
-        <button id="btnCopy" type="button" class="btn btn-secondary" hidden>Copy Summary</button>
-      </div>
-      <p id="summaryStatus" class="status" role="status" aria-live="polite" hidden></p>
-      <div id="summaryOutput" class="prose"></div>
-    </section>
-
-    <section id="quizSection" class="card" aria-labelledby="quiz-heading" hidden>
-      <h2 id="quiz-heading">Quiz</h2>
-      <p id="quizStatus" class="status" role="status" aria-live="polite" hidden></p>
-      <div id="quizOutput"></div>
-    </section>
-
-    <section id="flashSection" class="card" aria-labelledby="flash-heading" hidden>
-      <div class="card-head">
-        <h2 id="flash-heading">Flashcards</h2>
-        <button id="btnRestart" type="button" class="btn btn-secondary" hidden>Start Again</button>
-      </div>
-      <p id="flashStatus" class="status" role="status" aria-live="polite" hidden></p>
-      <p id="flashProgress" class="progress" aria-live="polite" hidden>
-        <span>Know It: <strong id="knownCount">0</strong></span>
-        <span>Review Again: <strong id="reviewCount">0</strong></span>
-        <span>Remaining: <strong id="remainingCount">0</strong></span>
-      </p>
-      <div id="flashGrid" class="flash-grid"></div>
-    </section>
-  </main>
-
-  <footer class="container site-footer">
-    <p>NotePilot AI — AI-generated content can contain mistakes. Check important facts against your sources.</p>
-  </footer>
-
-  <script src="script.js"></script>
+<header class="top">
+  <b class="brand">NotePilot AI</b>
+  <nav id="nav" aria-label="Main">
+    <button data-go="dash">Dashboard</button><button data-go="summary">Summarizer</button><button data-go="quiz">Quiz</button>
+    <button data-go="cards">Flashcards</button><button data-go="library">Study Library</button><button data-go="timer">Timer</button>
+  </nav>
+  <button id="demoBtn" class="btn small" aria-pressed="false">Demo: off</button>
+  <button id="themeBtn" class="btn small"></button>
+</header>
+<p id="demoBar" class="demo bar" hidden>DEMO MODE: sample content only, no AI requests are made. Turn Demo off to use real AI generation.</p>
+<main>
+<section data-view="dash">
+  <h1>Your personal study space</h1>
+  <p class="muted">Turn lecture notes into summaries, quizzes and flashcards, then keep what you need in your Study Library.</p>
+  <div class="grid">
+    <article class="panel"><h3>Summarizer</h3><p class="muted">Condense notes into clear headings and bullets.</p><button class="btn primary" data-go="summary">Start summarizing</button></article>
+    <article class="panel"><h3>Quiz</h3><p class="muted">Practice with multiple-choice questions.</p><button class="btn primary" data-go="quiz">Create a quiz</button></article>
+    <article class="panel"><h3>Flashcards</h3><p class="muted">Flip, sort and review key terms.</p><button class="btn primary" data-go="cards">Make flashcards</button></article>
+  </div>
+  <h2>Your progress</h2><div id="dashStats"></div>
+  <h2>Recently saved</h2><div id="dashRecent"></div>
+</section>
+<section data-view="summary"><h1>Note Summarizer</h1><p class="muted">Paste notes to get a structured summary.</p></section>
+<section data-view="quiz"><h1>Quiz</h1><p class="muted">Generate multiple-choice questions from your notes.</p></section>
+<section data-view="cards"><h1>Flashcards</h1><p class="muted">Generate a deck, flip cards and track what you know.</p></section>
+<section data-view="library">
+  <h1>Study Library</h1>
+  <p class="muted">Saved items live in this browser on this device only. They do not sync across devices.</p>
+  <div class="row"><input id="libSearch" type="search" placeholder="Search title or content" aria-label="Search library">
+    <select id="libFilter" aria-label="Filter by type"><option value="all">All types</option><option value="summary">Summaries</option><option value="quiz">Quizzes</option><option value="cards">Flashcards</option></select>
+    <button id="libClear" class="btn">Clear all</button></div>
+  <div id="libList"></div>
+</section>
+<section data-view="timer">
+  <h1>Pomodoro Timer</h1>
+  <div class="panel center"><p id="tMode" class="muted"></p><div id="tClock" class="clock" role="timer"></div><p id="tMsg" class="muted" aria-live="polite"></p>
+    <div class="row c"><button id="tGo" class="btn primary"></button><button id="tReset" class="btn">Reset</button><button id="tSkip" class="btn">Skip</button></div>
+    <div class="row c">
+      <label>Focus (min) <input id="tFocus" type="number" min="1" max="180"></label>
+      <label>Short break <input id="tShort" type="number" min="1" max="60"></label>
+      <label>Long break <input id="tLong" type="number" min="1" max="120"></label></div></div>
+</section>
+</main>
+<template id="genT">
+  <div class="panel">
+    <label class="sr" for="">Notes</label>
+    <textarea rows="10" placeholder="Paste your notes here" aria-label="Notes"></textarea>
+    <div class="row"><span class="cnt muted">0 / 20000</span><button class="btn small sample" type="button">Insert sample notes</button><button class="btn primary go" type="button">Generate</button></div>
+    <p class="err" role="alert"></p>
+  </div>
+  <div class="out" aria-live="polite"></div>
+</template>
+<div id="toasts"></div>
+<script src="script.js"></script>
 </body>
 </html>

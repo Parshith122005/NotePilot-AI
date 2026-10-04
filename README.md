@@ -1,131 +1,60 @@
 # NotePilot AI
 
-**Turn your notes into knowledge.**
+Study workspace for college students: AI summaries, MCQ quizzes, flashcards, a local Study Library, a Pomodoro timer and local progress tracking. Plain HTML/CSS/JS frontend + Spring Boot 4.0.6 (Java 26) backend. All AI calls go through the backend to Hugging Face (`deepseek-ai/DeepSeek-V4.1-Flash`).
 
-NotePilot AI is a study assistant. Paste your notes and generate a structured revision summary, a five-question multiple-choice quiz, and eight interactive flashcards. The AI is called from a Spring Boot backend, so your Hugging Face token never reaches the browser.
-
-> Status: this code has not been compiled or run by its author (only `script.js` was syntax-checked). Build and test it locally and fix anything your environment surfaces.
-
-## Features
-- **Summary:** exam-ready Markdown summary, rendered safely (no `innerHTML`), with a copy button.
-- **Quiz:** exactly 5 MCQs, scored after submission, with explanations and correct/incorrect highlighting.
-- **Flashcards:** exactly 8 cards with Show Answer, Know It / Review Again, live progress and Start Again.
-- Loading states, clear errors, responsive and keyboard-accessible UI.
-
-## Technology stack
-- Frontend: HTML5, CSS3, vanilla JavaScript, Fetch API (no frameworks or build tools)
-- Backend: Java 26, Spring Boot 4.0.x, Spring Web MVC, Maven, `RestTemplate`
-- AI: Hugging Face Inference Router (OpenAI-compatible chat completions), `deepseek-ai/DeepSeek-V4.1-Flash`
-
-## Architecture and request flow
-1. The browser POSTs `{"notes": "..."}` to `http://localhost:8080/api/{notes|quiz|flashcards}`.
-2. `NoteController` rejects blank or oversized notes (400).
-3. `AiService` calls `https://router.huggingface.co/v1/chat/completions` with `Authorization: Bearer $HF_TOKEN`.
-4. The service extracts `choices[0].message.content`. For quiz and flashcards it parses and validates the JSON (counts, fields, answer letters) and returns normalized JSON.
-5. Any AI failure becomes HTTP 502 with `{"error": "..."}`.
-
-## Project structure
-```text
-NotePilot-AI/
-├── index.html
-├── style.css
-├── script.js
-├── .gitignore
-├── .env.example
-├── README.md
-└── backend/
-    ├── pom.xml
-    └── src/
-        ├── main/
-        │   ├── java/com/notepilot/notepilot/
-        │   │   ├── NotepilotApplication.java
-        │   │   ├── controller/NoteController.java
-        │   │   ├── model/NoteRequest.java
-        │   │   └── service/AiService.java
-        │   └── resources/application.properties
-        └── test/java/com/notepilot/notepilot/
-            ├── controller/NoteControllerTest.java
-            └── service/AiServiceTest.java
+## Structure
+```
+index.html  style.css  script.js      static frontend
+backend/pom.xml  Dockerfile           Spring Boot app
+backend/src/main/java/com/notepilot/notepilot/{controller,model,service}
+backend/src/test/java/.../service/AiServiceTest.java
+.env.example  .gitignore
 ```
 
-## Prerequisites
-- JDK 26 (Spring Boot 4.0.x lists Java 17–26 support)
-- Maven 3.9+ (or IntelliJ's bundled Maven)
-- VS Code with the Live Server extension
-- A Hugging Face account and access token that can call Inference Providers
+## Run locally
+1. **Backend (IntelliJ):** open `backend/` as a Maven project, set the run-configuration environment variable `HF_TOKEN=<your token>` (never commit it), run `NotepilotApplication`. It listens on `8080`.
+   Or in a terminal: `cd backend && mvn spring-boot:run` (with `HF_TOKEN` set in your shell).
+2. **Frontend:** open the repo folder in VS Code and click *Go Live* -> `http://127.0.0.1:5500/index.html`.
+3. The frontend reads its API URL from `<meta name="api-base">` in `index.html` (default `http://localhost:8080/api`).
 
-## Hugging Face token setup
-1. Create a token at https://huggingface.co/settings/tokens with permission to make Inference Provider calls.
-2. Never commit it. `.env` files are git-ignored.
+## Tests and build
+`cd backend && mvn test` then `mvn package` (jar: `backend/target/notepilot-1.0.0.jar`). Tests never call Hugging Face and need no token. In IntelliJ: right-click `src/test/java` -> Run Tests.
 
-### IntelliJ IDEA
-1. Open **Run → Edit Configurations…**
-2. Select the Spring Boot configuration for `NotepilotApplication`.
-3. Under **Environment variables**, add `HF_TOKEN=hf_xxx`.
-4. Click **Apply/OK**, then stop and restart the application.
-
-### Terminal alternatives
-```bash
-# macOS / Linux
-export HF_TOKEN=hf_xxx && cd backend && mvn spring-boot:run
-# Windows PowerShell
-$env:HF_TOKEN="hf_xxx"; cd backend; mvn spring-boot:run
-```
-`.env.example` is documentation only. Spring Boot does not load `.env` files automatically.
-
-## Run the frontend
-Open the project folder in VS Code, right-click `index.html`, and choose **Open with Live Server**. The page must be at **`http://127.0.0.1:5500`**. The backend only allows that origin, and `localhost` and `127.0.0.1` are different origins.
-
-## API
-| Method | Endpoint | Purpose |
+## API (JSON)
+| Endpoint | Request | Success response |
 |---|---|---|
-| GET | `/api/hello` | Health check |
-| POST | `/api/notes` | Summary |
-| POST | `/api/quiz` | 5-question quiz |
-| POST | `/api/flashcards` | 8 flashcards |
+| `GET /api/health` | - | `{"status":"ok"}` |
+| `POST /api/notes` | `{"text":"..."}` | `{"summary":"markdown"}` |
+| `POST /api/quiz` | `{"text":"..."}` | `{"questions":[{"question","options":[],"correctIndex":0,"explanation"}]}` |
+| `POST /api/flashcards` | `{"text":"..."}` | `{"cards":[{"front","back"}]}` |
 
-```bash
-curl -X POST http://localhost:8080/api/notes \
-  -H "Content-Type: application/json" \
-  -d '{"notes":"Photosynthesis converts light energy into chemical energy in chloroplasts."}'
-```
+Errors are always `{"error":"message"}`: 400 blank/invalid body, 413 too long, 429 upstream rate limit, 502 upstream/invalid AI output, 503 `HF_TOKEN` missing, 504 timeout.
+If your original `NoteRequest` used a different field name than `text`, update `NoteRequest.java` and `script.js` together.
 
-Summary response: `{"summary": "# Photosynthesis\n..."}`
+## Environment variables (backend)
+| Variable | Purpose | Default |
+|---|---|---|
+| `HF_TOKEN` | Hugging Face token (secret) | none (AI endpoints return 503) |
+| `CORS_ORIGINS` | comma-separated allowed frontend origins | `http://127.0.0.1:5500,http://localhost:5500` |
+| `PORT` / `SERVER_PORT` | server port | `8080` |
+| `HF_MODEL`, `HF_API_URL` | model and endpoint | DeepSeek-V4.1-Flash, HF router chat-completions |
+| `HF_TIMEOUT_SECONDS`, `MAX_INPUT_CHARS` | timeout, input limit | `60`, `20000` |
 
-Quiz response:
-```json
-{"questions":[{"question":"...","options":{"A":"...","B":"...","C":"...","D":"..."},"answer":"B","explanation":"..."}]}
-```
+## Deploy (frontend and backend are separate deployments)
+**Backend on Render (Docker):** New Web Service -> connect the GitHub repo -> Root Directory `backend` -> Runtime Docker. Environment: `HF_TOKEN`, `CORS_ORIGINS=https://<your-frontend-domain>`. Health check path `/api/health`. Free instances sleep when idle, so the first request after a pause can take about a minute; check Render's current free-tier limits and pricing.
+**Frontend on Cloudflare Pages:** connect the repo, no build command, output directory `/`. Before deploying, change `api-base` in `index.html` to `https://<your-render-service>.onrender.com/api` and commit. Then open the site and generate a summary to test the connection.
 
-Flashcards response:
-```json
-{"flashcards":[{"question":"...","answer":"..."}]}
-```
-
-Errors: `{"error": "message"}` with HTTP 400 (bad input), 502 (AI/API failure) or 500 (unexpected).
-
-## Why `content` can be `null`
-The configured model is a reasoning model. It can return `message.content: null` with the text in `message.reasoning_content` when it spends its whole token budget thinking (`finish_reason: "length"`). Other hosts of this model document that reasoning tokens count against `max_tokens`. The Hugging Face router's exact behavior was not verified.
-
-What the project does about it:
-- `max_tokens` defaults to **8000** (`notepilot.ai.max-tokens`) instead of 2000.
-- An optional `notepilot.ai.reasoning-effort` (for example `low`) is sent only if set. If the router rejects it, clear it.
-- `reasoning_content` is never used as an answer. A null `content` becomes a clear 502 error, and the log shows `finish_reason` and token usage.
+## Security notes
+- `HF_TOKEN` lives only in backend environment variables; `.env` is git-ignored. Never put it in frontend files or localStorage.
+- AI/user text is rendered with `textContent`, never raw HTML.
+- A public, unauthenticated AI endpoint needs rate limiting and abuse protection before real traffic. This is not implemented.
+- Request size is checked in the controller after the body is parsed; add a proxy-level body limit for production.
 
 ## Troubleshooting
-- **"Could not resolve placeholder 'HF_TOKEN'" / app won't start:** the environment variable is missing. Set it in the run configuration and restart.
-- **Frontend says it cannot reach the backend:** start the backend and check `http://localhost:8080/api/hello`.
-- **CORS error:** open the page from `http://127.0.0.1:5500`, not `localhost:5500`. To allow another origin, edit `@CrossOrigin` in `NoteController`.
-- **HTTP 401/403 from Hugging Face:** token invalid or lacking Inference Providers permission.
-- **HTTP 404:** model name unavailable on your account or provider. Change `notepilot.ai.model`.
-- **HTTP 429:** rate limit or quota reached. Wait and retry.
-- **"used all of its output tokens" / null content:** raise `notepilot.ai.max-tokens` or set `notepilot.ai.reasoning-effort`.
-- **"malformed JSON" / "unexpected format":** the model broke the schema. Retry. Details are in the backend log.
-- **Build error on Spring Boot version:** use the latest `4.0.x` parent. Boot 4 uses Jackson 3 (`tools.jackson`), so on Boot 3.x the Jackson imports in `AiService` would need to change.
+- "Cannot reach the backend": backend not running, wrong `api-base`, or origin missing from `CORS_ORIGINS`.
+- 503: `HF_TOKEN` not set for the running process.
+- HTTP 402 from the AI provider: check that the Hugging Face account has available credits and that its token can access the configured `HF_MODEL`; retry after resolving billing or access.
+- 502 "unusable response": the model returned malformed JSON twice; retry.
 
-## Security
-- The token lives only in the backend environment. Never put it in JS/HTML/CSS, `application.properties`, or Git.
-- Quiz answers are sent to the browser with the quiz data (kept out of the UI until submission), so a technical user could read them in DevTools. Fine for a study tool, not for graded exams.
-
-## Future improvements
-Streaming responses, saving notes and history, PDF/Doc upload, spaced-repetition scheduling, rate limiting, and Docker packaging.
+## Screenshots
+_Placeholders: add dashboard-dark.png, dashboard-light.png, quiz.png._

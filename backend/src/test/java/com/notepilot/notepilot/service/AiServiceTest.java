@@ -1,91 +1,100 @@
-package com.notepilot.notepilot.service;
+ package com.notepilot.notepilot.service;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
+import com.notepilot.notepilot.model.Study.Flashcard;
+import com.notepilot.notepilot.model.Study.QuizQuestion;
 import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class AiServiceTest {
 
-    private static Map<String, Object> response(Object content, String finishReason) {
-        Map<String, Object> message = new java.util.HashMap<>();
-        message.put("role", "assistant");
-        message.put("content", content);
-        message.put("reasoning_content", "thinking...");
-        Map<String, Object> choice = new java.util.HashMap<>();
-        choice.put("message", message);
-        choice.put("finish_reason", finishReason);
-        return Map.of("choices", List.of(choice));
+    private static final String QUIZ =
+            "{\"questions\":[{\"question\":\"Q?\","
+                    + "\"options\":[\"a\",\"b\"],"
+                    + "\"correctIndex\":1,"
+                    + "\"explanation\":\"e\"}]}";
+
+    @Test
+    void parsesFencedQuiz() {
+        List<QuizQuestion> questions =
+                AiService.parseQuiz("```json\n" + QUIZ + "\n```");
+
+        assertEquals(1, questions.size());
+        assertEquals(1, questions.get(0).correctIndex());
     }
 
     @Test
-    void extractsContent() {
-        assertEquals("hello", AiService.extractContent(response("hello", "stop")));
+    void rejectsOutOfRangeAnswer() {
+        String invalidQuiz = QUIZ.replace(
+                "\"correctIndex\":1",
+                "\"correctIndex\":5"
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> AiService.parseQuiz(invalidQuiz)
+        );
     }
 
     @Test
-    void nullContentWithLengthIsClearError() {
-        var ex = assertThrows(AiService.AiServiceException.class,
-                () -> AiService.extractContent(response(null, "length")));
-        assertTrue(ex.getMessage().contains("max_tokens"));
+    void rejectsMalformedAndNull() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> AiService.parseQuiz("{not json")
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> AiService.parseQuiz(null)
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> AiService.parseCards("   ")
+        );
     }
 
     @Test
-    void nullResponseIsRejected() {
-        assertThrows(AiService.AiServiceException.class, () -> AiService.extractContent(null));
+    void parsesCardsAndRejectsBlankBack() {
+        String validCards =
+                "{\"cards\":[{\"front\":\"x\",\"back\":\"y\"}]}";
+
+        List<Flashcard> cards = AiService.parseCards(validCards);
+
+        assertEquals(1, cards.size());
+
+        String invalidCards =
+                "{\"cards\":[{\"front\":\"x\",\"back\":\"\"}]}";
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> AiService.parseCards(invalidCards)
+        );
     }
 
     @Test
-    void stripsFences() {
-        assertEquals("{\"a\":1}", AiService.stripCodeFences("```json\n{\"a\":1}\n```"));
+    void missingTokenGivesConfigError() {
+        AiService service = new AiService("", "gemini-2.5-flash-lite", 1);
+
+        AiService.AiException exception = assertThrows(
+                AiService.AiException.class,
+                () -> service.summarize("notes")
+        );
+
+        assertEquals(503, exception.status());
     }
 
     @Test
-    void flashcardsWithWrongCountAreRejected() {
-        assertThrows(AiService.AiServiceException.class,
-                () -> AiService.parseFlashcards("{\"flashcards\":[{\"question\":\"q\",\"answer\":\"a\"}]}"));
-    }
+    void paymentRequiredErrorExplainsHowToResolveIt() {
+        String message = AiService.upstreamErrorMessage(402);
 
-    @Test
-    void validFlashcardsPass() {
-        StringBuilder sb = new StringBuilder("```json\n{\"flashcards\":[");
-        for (int i = 0; i < 8; i++) {
-            sb.append(i > 0 ? "," : "").append("{\"question\":\"q").append(i).append("\",\"answer\":\"a\"}");
-        }
-        sb.append("]}\n```");
-        assertTrue(AiService.parseFlashcards(sb.toString()).contains("\"flashcards\""));
-    }
+        assertNotNull(message);
+        assertFalse(message.isBlank());
 
-    @Test
-    void malformedJsonIsRejected() {
-        assertThrows(AiService.AiServiceException.class, () -> AiService.parseQuiz("not json"));
-    }
-
-    @Test
-    void quizWithBadAnswerLetterIsRejected() {
-        StringBuilder sb = new StringBuilder("{\"questions\":[");
-        for (int i = 0; i < 5; i++) {
-            sb.append(i > 0 ? "," : "").append("{\"question\":\"q").append(i)
-              .append("\",\"options\":{\"A\":\"1\",\"B\":\"2\",\"C\":\"3\",\"D\":\"4\"},")
-              .append("\"answer\":\"E\",\"explanation\":\"x\"}");
-        }
-        sb.append("]}");
-        assertThrows(AiService.AiServiceException.class, () -> AiService.parseQuiz(sb.toString()));
-    }
-
-    @Test
-    void validQuizPasses() {
-        StringBuilder sb = new StringBuilder("{\"questions\":[");
-        for (int i = 0; i < 5; i++) {
-            sb.append(i > 0 ? "," : "").append("{\"question\":\"q").append(i)
-              .append("\",\"options\":{\"A\":\"1\",\"B\":\"2\",\"C\":\"3\",\"D\":\"4\"},")
-              .append("\"answer\":\"b\",\"explanation\":\"x\"}");
-        }
-        sb.append("]}");
-        assertTrue(AiService.parseQuiz(sb.toString()).contains("\"answer\":\"B\""));
+        assertEquals(
+                "The AI service returned an error (HTTP 500).",
+                AiService.upstreamErrorMessage(500)
+        );
     }
 }
